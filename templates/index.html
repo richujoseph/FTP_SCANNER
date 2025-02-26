@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetProbe FTP Scanner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6200ee;
+            --primary-dark: #3700b3;
+            --primary-light: #bb86fc;
+            --secondary: #03dac6;
+            --secondary-dark: #018786;
+            --error: #cf6679;
+            --background: #121212;
+            --surface: #1e1e1e;
+            --on-background: rgba(255, 255, 255, 0.87);
+            --on-surface: rgba(255, 255, 255, 0.87);
+            --on-primary: #ffffff;
+            --on-secondary: #000000;
+            --elevation-1: rgba(255, 255, 255, 0.05);
+            --elevation-2: rgba(255, 255, 255, 0.08);
+            --elevation-3: rgba(255, 255, 255, 0.11);
+            --success: #4caf50;
+            --warning: #ff9800;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--on-background);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        header {
+            background: var(--surface);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--on-primary);
+            font-size: 1.5rem;
+            transform: rotate(45deg);
+            box-shadow: 0 4px 8px rgba(98, 0, 238, 0.5);
+        }
+        
+        .logo i {
+            transform: rotate(-45deg);
+        }
+        
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--on-surface);
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            background-color: var(--elevation-1);
+        }
+        
+        .main-content {
+            padding: 2rem 0;
+        }
+        
+        .scanner-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .scanner-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .scanner-info h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        
+        .scanner-info p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .tag-list {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tag {
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            background-color: var(--elevation-2);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .scanner-card {
+            background-color: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-header {
+            background-color: var(--primary);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-header h2 {
+            color: var(--on-primary);
+            font-size: 1.5rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card-header::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .card-header::before {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+            flex: 1;
+        }
+        
+        .scan-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .input-field {
+            position: relative;
+        }
+        
+        .input-field input {
+            width: 100%;
+            padding: 1rem;
+            padding-left: 3rem;
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--on-background);
+            font-size: 1rem;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .input-field input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(98, 0, 238, 0.3);
+        }
+        
+        .input-field i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .scan-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .option-toggle {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        .option-toggle.active {
+            background-color: rgba(98, 0, 238, 0.2);
+            border-color: var(--primary);
+        }
+        
+        .option-toggle i {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .option-toggle.active i {
+            color: var(--primary-light);
+        }
+        
+        .option-toggle span {
+            font-size: 0.9rem;
+        }
+        
+        .scan-button {
+            background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+            color: var(--on-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(98, 0, 238, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .scan-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(98, 0, 238, 0.4);
+        }
+        
+        .scan-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(98, 0, 238, 0.3);
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--on-primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .scan-results {
+            background-color: var(--surface);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin-bottom: 3rem;
+        }
+        
+        .results-header {
+            background-color: var(--primary-dark);
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .results-header h2 {
+            color: var(--on-primary);
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .export-button {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            color: var(--on-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.3s;
+        }
+        
+        .export-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .results-table th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 500;
+            color: var(--primary-light);
+            font-size: 0.9rem;
+        }
+        
+        .results-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .results-table tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-vulnerable {
+            background-color: rgba(207, 102, 121, 0.2);
+            color: var(--error);
+        }
+        
+        .status-secure {
+            background-color: rgba(3, 218, 198, 0.2);
+            color: var(--secondary);
+        }
+        
+        .status-warning {
+            background-color: rgba(255, 152, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .no-results {
+            padding: 2rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+        
+        .features-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-card {
+            background-color: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+        
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background-color: rgba(98, 0, 238, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            color: var(--primary-light);
+        }
+        
+        .feature-card h3 {
+            margin-bottom: 0.8rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+        
+        footer {
+            background-color: var(--surface);
+            padding: 2rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary-light);
+        }
+        
+        .copyright {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+        
+        #loading {
+            display: none;
+            padding: 2rem 0;
+            text-align: center;
+        }
+        
+        #results-container {
+            display: none;
+        }
+        
+        @media (max-width: 960px) {
+            .scanner-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .features-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .scanner-info h1 {
+                font-size: 2rem;
+            }
+            
+            .features-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .option-toggle span {
+                display: none;
+            }
+            
+            .option-toggle {
+                justify-content: center;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-container">
+            <div class="brand">
+                <div class="logo">
+                    <i class="fas fa-network-wired"></i>
+                </div>
+                <div class="brand-name">NetProbe</div>
+            </div>
+            <button class="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+    
+    <main class="container main-content">
+        <section class="scanner-section">
+            <div class="scanner-info">
+                <h1>Anonymous FTP Scanner</h1>
+                <p>Identify vulnerable FTP servers on your network that allow anonymous access. Secure your infrastructure by detecting potential security risks.</p>
+                
+                <div class="tag-list">
+                    <span class="tag">Network Security</span>
+                    <span class="tag">FTP Protocol</span>
+                    <span class="tag">Vulnerability Scanner</span>
+                    <span class="tag">Cybersecurity</span>
+                </div>
+                
+                <p>This powerful tool helps security professionals and system administrators quickly detect FTP servers that allow anonymous logins, which can represent significant security threats to your organization.</p>
+            </div>
+            
+            <div class="scanner-card">
+                <div class="card-header">
+                    <h2>FTP Security Scanner</h2>
+                </div>
+                <div class="card-body">
+                    <form id="scan-form" class="scan-form">
+                        <div class="input-field">
+                            <i class="fas fa-globe"></i>
+                            <input type="text" id="target" name="target" placeholder="Enter hostname or IP address" required>
+                        </div>
+                        
+                        <div class="scan-options">
+                            <div class="option-toggle active">
+                                <i class="fas fa-user-secret"></i>
+                                <span>Anonymous</span>
+                            </div>
+  
+                            <div class="option-toggle">
+                                <i class="fas fa-bolt"></i>
+                                <span>Quick Scan</span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="scan-button" class="scan-button">
+                            <i class="fas fa-search"></i>
+                            Scan Target
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Scanning target for vulnerabilities...</p>
+        </div>
+        
+        <section id="results-container" class="scan-results">
+            <div class="results-header">
+                <h2>Scan Results</h2>
+                <button class="export-button">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+            </div>
+            
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th width="40%">Target</th>
+                        <th width="15%">Port</th>
+                        <th width="25%">Status</th>
+                        <th width="20%">Details</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                    <!-- Results will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+        
+        <section class="features-section">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Advanced Detection</h3>
+                <p>Utilize advanced scanning techniques to identify vulnerable FTP servers across your network infrastructure.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>Real-time Analysis</h3>
+                <p>Get instant results and detailed analysis of FTP security vulnerabilities with actionable recommendations.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Security Hardening</h3>
+                <p>Identify and address security weaknesses in your FTP configuration before they can be exploited by attackers.</p>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <div class="container footer-content">
+            <div class="footer-links">
+                <a href="#">Documentation</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+            <div class="copyright">
+                &copy; 2025 NetProbe Security Tools. All rights reserved.
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // Toggle between scan options
+        const optionToggles = document.querySelectorAll('.option-toggle');
+        optionToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                optionToggles.forEach(t => t.classList.remove('active'));
+                toggle.classList.add('active');
+            });
+        });
+        
+        // Handle form submission
+        document.getElementById('scan-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const target = document.getElementById('target').value.trim();
+            if (!target) return;
+            
+            // Show loading spinner
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results-container').style.display = 'none';
+            
+            // Simulate scanning process
+            setTimeout(() => {
+                // Hide loading spinner
+                document.getElementById('loading').style.display = 'none';
+                
+                // Generate random scan results for demonstration
+                const resultsBody = document.getElementById('results-body');
+                resultsBody.innerHTML = ''; // Clear previous results
+                
+                const scanResults = [];
+                
+                // Add primary result (FTP server)
+                const vulnerability = Math.random() > 0.6;
+                const warningOnly = Math.random() > 0.5;
+                
+                scanResults.push({
+                    target: target,
+                    port: 21,
+                    status: vulnerability ? 'Vulnerable' : (warningOnly ? 'Warning' : 'Secure'),
+                    details: vulnerability ? 'Anonymous access allowed' : 
+                            (warningOnly ? 'Old FTP version detected' : 'No anonymous access')
+                });
+                
+                // Sometimes add secondary results
+                //if (Math.random() > 0.5) {
+                   // scanResults.push({
+                       // target: target,
+                        //port: 2121,
+                        //status: Math.random() > 0.3 ? 'Secure' : 'Vulnerable',
+                        //details: Math.random() > 0.3 ? 'Protected FTP service' : 'Anonymous access allowed'
+                  //  });
+              //  }
+                
+                // Populate results table
+                if (scanResults.length === 0) {
+                    resultsBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="no-results">No FTP services detected on target</td>
+                        </tr>
+                    `;
+                } else {
+                    scanResults.forEach(result => {
+                        const row = document.createElement('tr');
+                        let statusClass = 'status-secure';
+                        if (result.status === 'Vulnerable') {
+                            statusClass = 'status-vulnerable';
+                        } else if (result.status === 'Warning') {
+                            statusClass = 'status-warning';
+                        }
+                        
+                        row.innerHTML = `
+                            <td>${result.target}</td>
+                            <td>${result.port}</td>
+                            <td>
+                                <span class="status-badge ${statusClass}">
+                                    <i class="fas ${result.status === 'Vulnerable' ? 'fa-exclamation-triangle' : 
+                                                  (result.status === 'Warning' ? 'fa-exclamation-circle' : 'fa-check-circle')}"></i>
+                                    ${result.status}
+                                </span>
+                            </td>
+                            <td>${result.details}</td>
+                        `;
+                        resultsBody.appendChild(row);
+                    });
+                }
+                
+                // Show results container
+                document.getElementById('results-container').style.display = 'block';
+            }, 2000);
+        });
+        
+        // Theme toggle functionality (dark/light mode) - just visual for demo
+        document.querySelector('.theme-toggle').addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            if (icon.classList.contains('fa-moon')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# Byte-compiled / compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+*.venv
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Dependency files
+Pipfile
+Pipfile.lock
+requirements.txt
+
+# Flask specific
+instance/
+*.pid
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Ignore uploaded files
+uploads/
+*.csv
